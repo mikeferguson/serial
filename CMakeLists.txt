@@ -1,8 +1,7 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(serial)
 
-# Find catkin
-find_package(catkin REQUIRED)
+find_package(ament_cmake REQUIRED)
 
 if(APPLE)
     find_library(IOKIT_LIBRARY IOKit)
@@ -13,17 +12,6 @@ if(UNIX AND NOT APPLE)
     # If Linux, add rt and pthread
     set(rt_LIBRARIES rt)
     set(pthread_LIBRARIES pthread)
-    catkin_package(
-        LIBRARIES ${PROJECT_NAME}
-        INCLUDE_DIRS include
-        DEPENDS rt pthread
-    )
-else()
-    # Otherwise normal call
-    catkin_package(
-        LIBRARIES ${PROJECT_NAME}
-        INCLUDE_DIRS include
-    )
 endif()
 
 ## Sources
@@ -47,7 +35,7 @@ else()
 endif()
 
 ## Add serial library
-add_library(${PROJECT_NAME} ${serial_SRCS})
+add_library(${PROJECT_NAME} SHARED ${serial_SRCS})
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
 elseif(UNIX)
@@ -66,15 +54,28 @@ include_directories(include)
 
 ## Install executable
 install(TARGETS ${PROJECT_NAME}
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
 )
 
 ## Install headers
 install(FILES include/serial/serial.h include/serial/v8stdint.h
-  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}/serial)
+  DESTINATION include/serial)
 
 ## Tests
-if(CATKIN_ENABLE_TESTING)
+if(BUILD_TESTING)
+    find_package(ament_cmake_gtest REQUIRED)
     add_subdirectory(tests)
 endif()
+
+ament_export_include_directories(include)
+ament_export_libraries(
+    ${PROJECT_NAME}
+)
+if(UNIX AND NOT APPLE)
+ament_export_libraries(
+   rt
+   pthread
+)
+endif()
+ament_package()
